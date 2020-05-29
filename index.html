@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>images</title>
+<script src="js/html2canvas.min.js"></script>
+<script type="text/javascript" src="js/jquery.min.js"></script>
+<script type="text/javascript" src="js/esign.js"></script>
+<script src="js/canvas2image.js"></script>
+<script src="js/base64.js"></script>
+<style>
+#canvasEdit{border:1px solid red;}
+</style>
+</head>
+<body>
+<div id=content style="width:394px;height:389px;border:1px solid gray">
+	<p align="left">
+	请确认以上订单，没问题请签字，订单编号：20201294001<p align="center">手写签名
+	回执：
+	<div class="canvasDiv" style="width: 350px; height:200px">
+		<div id="editing_area">
+			 <canvas width="350" height="200" id="canvasEdit"></canvas>
+		</div>
+	</div>
+</div>
+
+<div id="result"></div>
+<input type="button" id="btnSave" value="提交到服务器">
+
+</body>
+<script>
+var formdata=new FormData();
+var content = document.getElementById("content");
+// 进行canvas生成
+$("#btnSave").click(function(){
+	html2canvas(content, {
+        onrendered: function(canvas) {
+        	//添加属性
+        	canvas.setAttribute('id','thecanvas');
+			var imgBaes64 = canvas.toDataURL("image/png");
+
+			var arr = imgBaes64.split(","),
+			mime = arr[0].match(/:(.*?);/)[1],
+			bstr = atob(arr[1]),
+			n = bstr.length,
+			u8arr = new Uint8Array(n);
+			while (n--) {
+				u8arr[n] = bstr.charCodeAt(n);
+			}
+			let newfile =  new File([u8arr], name, { type: mime });
+
+			formdata.append('file',newfile);
+
+			$.ajax({
+		        url: "ajax_upload.asp",
+		        type: 'POST',
+		        cache: false,
+		        data: formdata,
+		        processData: false,
+		        contentType: false,
+		         success: function (backdata) {
+					$("#result").html("已上传成功：" + backdata);
+					formdata.delete('file');
+		        },
+		        error: function (err) {
+		        	$("#result").html("发生意外错误，请检查并排除问题后重试。建议检查iis端“最大请求实体主体限制”");
+		        }
+		    });
+        }
+	});
+});
+</script>
+
+<script type="text/javascript">
+$(function(){
+	//初始化动作，根据DOM的ID不同进行自定义，如果不写则内部默认取这四个
+	$().esign("canvasEdit", "sign_show", "sign_clear", "sign_ok");
+});
+</script>
+</html>
